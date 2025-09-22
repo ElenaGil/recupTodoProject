@@ -1,10 +1,13 @@
 package org.example.todoproject.controller;
 
+import org.example.todoproject.dto.TodoDto;
 import org.example.todoproject.model.Todo;
 import org.example.todoproject.service.TodoService;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/todo")
@@ -16,8 +19,9 @@ public class TodoController {
     }
 
     @PostMapping()
-    public Todo createTodo(@RequestBody String todoDescription) {
-        return todoService.createTodo(todoDescription);
+    @ResponseStatus(HttpStatus.CREATED)
+    public Todo createTodo(@RequestBody TodoDto dto) {
+        return todoService.createTodo(dto);
     }
 
     @GetMapping()
@@ -26,17 +30,25 @@ public class TodoController {
     }
 
     @GetMapping("/{id}")
-    public Todo getDetailsById(@PathVariable String id) {
-        return todoService.getDetailsById(id);
+    public Todo getTodoById(@PathVariable String id) {
+        return todoService.findById(id);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteById(@PathVariable String id) {
+    public void deleteTodo(@PathVariable String id) {
         todoService.deleteTodoById(id);
     }
 
     @PutMapping("/{id}")
-    public Todo editById(@PathVariable String id, @RequestBody Todo newTodoData) {
+    @ResponseStatus(HttpStatus.OK)
+    public Todo editTodo(@PathVariable String id, @RequestBody TodoDto newTodoData) {
         return todoService.updateTodo(id, newTodoData);
+    }
+
+    // локальный хандлер имеет преимущество перед глобальным
+    @ExceptionHandler(NoSuchElementException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleNoSuchElementException() {
+        return "Element with given ID is not found";
     }
 }
