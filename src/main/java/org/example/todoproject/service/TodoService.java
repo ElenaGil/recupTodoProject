@@ -11,14 +11,21 @@ import java.util.List;
 public class TodoService {
     private final TodoRepo todoRepo;
     private final IdService idService;
+    private final ChatGPTService chatGPTService;
 
-    public TodoService(TodoRepo todoRepo, IdService idService) {
+    public TodoService(TodoRepo todoRepo, IdService idService, ChatGPTService chatGPTService) {
         this.todoRepo = todoRepo;
         this.idService = idService;
+        this.chatGPTService = chatGPTService;
     }
 
-    public Todo createTodo(TodoDto todoDescription) {
-        Todo newTodo = new Todo(idService.randomID(), todoDescription.description(), todoDescription.status());
+    public Todo createTodo(TodoDto todoDto) {
+        String description = chatGPTService.checkTextForMistakes(todoDto.description());
+        Todo newTodo = new Todo(
+                idService.randomID(),
+                description,
+                todoDto.status()
+        );
         todoRepo.save(newTodo);
 
         return newTodo;

@@ -15,7 +15,9 @@ import static org.mockito.Mockito.*;
 class TodoServiceTest {
     TodoRepo todoRepo = mock(TodoRepo.class);
     IdService idService = mock(IdService.class);
-    TodoService todoService = new TodoService(todoRepo, idService);
+    ChatGPTService chatGPTService = mock(ChatGPTService.class);
+
+    TodoService todoService = new TodoService(todoRepo, idService, chatGPTService);
 
     Todo todo = new Todo("1", "testDescription", TodoStatus.OPEN);
     TodoDto dto = new TodoDto("testDescription", TodoStatus.OPEN);
@@ -25,13 +27,14 @@ class TodoServiceTest {
         //GIVEN
         when(idService.randomID()).thenReturn("1");
         when(todoRepo.save(todo)).thenReturn(todo);
+        when(chatGPTService.checkTextForMistakes(todo.description())).thenReturn("test-description");
 
         //WHEN
         Todo actual = todoService.createTodo(dto);
 
         //THEN
-        assertEquals(todo, actual);
-        verify(todoRepo).save(todo);
+        assertEquals(todo.withDescription("test-description"), actual);
+        verify(todoRepo).save(todo.withDescription("test-description"));
     }
 
     @Test
