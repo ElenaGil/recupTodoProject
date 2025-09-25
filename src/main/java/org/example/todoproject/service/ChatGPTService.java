@@ -1,6 +1,5 @@
 package org.example.todoproject.service;
 
-import org.example.todoproject.model.AiChoice;
 import org.example.todoproject.model.AiMessage;
 import org.example.todoproject.model.AiRequest;
 import org.example.todoproject.model.AiResponse;
@@ -32,18 +31,16 @@ public class ChatGPTService {
                 List.of(new AiMessage("user", "Give me this text without mistakes: " + text)));
         AiRequest request  = new AiRequest("gpt-5", messageList);
 
-        List<AiChoice> res;
+        AiResponse aiResponse = restClient.post()
+                .body(request)
+                .contentType(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .body(AiResponse.class);
         try {
-             res = restClient.post()
-                    .body(request)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .retrieve()
-                    .body(AiResponse.class)
-                    .choices();
+            return aiResponse.choices().get(0).message().content();
         } catch (NullPointerException exception) {
-            return exception.getMessage();
+            return "No data in response";
         }
 
-        return res.get(0).message().content();
     }
 }

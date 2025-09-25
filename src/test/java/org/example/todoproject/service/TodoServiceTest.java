@@ -7,6 +7,7 @@ import org.example.todoproject.repository.TodoRepo;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,6 +36,7 @@ class TodoServiceTest {
         //THEN
         assertEquals(todo.withDescription("test-description"), actual);
         verify(todoRepo).save(todo.withDescription("test-description"));
+        verify(idService).randomID();
     }
 
     @Test
@@ -47,6 +49,7 @@ class TodoServiceTest {
 
         //THEN
         assertFalse(actual.isEmpty());
+        assertEquals(List.of(todo), actual);
         verify(todoRepo).findAll();
     }
 
@@ -54,14 +57,17 @@ class TodoServiceTest {
     void updateTodo_shouldSaveNewDataForGivenTodo() {
         //GIVEN
         TodoDto dto = new TodoDto("newDescription", TodoStatus.IN_PROGRESS);
+        Todo updatedTodo = new Todo("1", dto.description(), dto.status());
+
         when(todoRepo.findById("1")).thenReturn(Optional.ofNullable(todo));
-        when(todoRepo.save(todo)).thenReturn(new Todo("1", dto.description(), dto.status()));
+        when(todoRepo.save(todo)).thenReturn(updatedTodo);
 
         //WHEN
         Todo actual = todoService.updateTodo("1", dto);
 
         //THEN
         verify(todoRepo).findById("1");
+        verify(todoRepo).save(updatedTodo);
         assertEquals(actual.description(), dto.description());
         assertEquals(actual.status(), dto.status());
     }
@@ -76,12 +82,27 @@ class TodoServiceTest {
 
         //THEN
         assertEquals("testDescription", actual.description());
+        assertEquals(todo, actual);
+        verify(todoRepo).findById("1");
+    }
+
+    @Test
+    void getDetailsById_shouldThrowException_whenCalledWithNotExistingId() {
+        //GIVEN
+        when(todoRepo.findById("1")).thenReturn(Optional.empty());
+
+        //WHEN
+        assertThrows(NoSuchElementException.class, () -> todoService.findById("1"));
+
+        //THEN
         verify(todoRepo).findById("1");
     }
 
     @Test
     void deleteTodoById() {
         //GIVEN
+        doNothing().when(todoRepo).deleteById("1"); // можно и не писать эту строку
+
         //WHEN
         todoService.deleteTodoById("1");
 

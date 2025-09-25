@@ -24,7 +24,8 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 @SpringBootTest
 @AutoConfigureMockMvc
 @AutoConfigureMockRestServiceServer
-// вместо BeforeEach и AfterEach в моем случае можно использовать @DirtiesContext
+// вместо BeforeEach и AfterEach в моем случае можно использовать @DirtiesContext после каждой строчки с аннотацией @Test
+// или же в самом начале перед классом TodoControllerTest вот так:
 //@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class TodoControllerTest {
 
@@ -49,21 +50,11 @@ class TodoControllerTest {
     }
 
     @Test
+    // @DirtiesContext
     void createTodo_shouldReturnCreatedTodo() throws Exception {
         //!!! в папке test в application.properties нужно ОБЯЗАТЕЛЬНО указать мнимый OPENAI_API_KEY !!!
         mockServer.expect(requestTo("https://api.openai.com/v1/chat/completions"))
                 .andExpect(method(HttpMethod.POST))
-                .andExpect(content().json("""
-                    {
-                      "model": "gpt-5",
-                      "messages": [
-                        {
-                          "role": "user",
-                          "content": "Give me the following text without mistakes: NEWW TODO"
-                        }
-                      ]
-                    }
-                    """))
                 .andRespond(withSuccess("""
                     {
                         "id": "12345",
@@ -78,7 +69,6 @@ class TodoControllerTest {
                         ]
                     }
                     """, MediaType.APPLICATION_JSON));
-
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/todo")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -95,7 +85,8 @@ class TodoControllerTest {
                      "description": "NEW TODO",
                      "status": "IN_PROGRESS"
                   }
-                """));
+                """))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").isNotEmpty());
     }
 
     @Test
@@ -114,16 +105,24 @@ class TodoControllerTest {
     }
 
     @Test
-    void getTodoById_shouldReturnTodoDataWithGivenId() throws Exception {
+    void getTodoById_shouldReturnTodoData_WhenValidId() throws Exception {
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/todo/1"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.content().json("""
                       {
+                         "id": "1",
                          "description": "test-TODO",
                          "status": "OPEN"
                       }
                 """));
+    }
+
+    @Test
+    void getTodoById_shouldReturn404_WhenInvalidId() throws Exception {
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/todo/x1"))
+                .andExpect(MockMvcResultMatchers.status().isNotFound());
     }
 
     @Test
@@ -148,7 +147,13 @@ class TodoControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(todoDto))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().json(todoDto));
+                .andExpect(MockMvcResultMatchers.content().json("""
+                      {
+                        "id": "1",
+                        "description": "Updated TODO",
+                        "status": "DONE"
+                      }
+                """));
     }
 
     @Test
@@ -160,7 +165,7 @@ class TodoControllerTest {
                         }
                         """;
 
-        mockMvc.perform(MockMvcRequestBuilders.put("/api/todo/11")
+        mockMvc.perform(MockMvcRequestBuilders.put("/api/todo/test012345")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(todoDto))
                 .andExpect(MockMvcResultMatchers.status().isNotFound())

@@ -6,6 +6,7 @@ import org.example.todoproject.repository.TodoRepo;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 public class TodoService {
@@ -36,11 +37,11 @@ public class TodoService {
     }
 
     public Todo findById(String id) {
-        return todoRepo.findById(id).orElseThrow();
+        return todoRepo.findById(id).orElseThrow(() -> new NoSuchElementException("Todo with id: " + id + " not found!"));
     }
 
     public Todo updateTodo(String id, TodoDto newTodoData) {
-        Todo existingTodo = todoRepo.findById(id).orElseThrow();
+        Todo existingTodo = todoRepo.findById(id).orElseThrow(() -> new NoSuchElementException("Todo with id: " + id + " not found!"));
 
         Todo updatedTodo = existingTodo
                 .withStatus(newTodoData.status())
